@@ -17,10 +17,18 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import torch
-import torch.nn.functional as F
-from torch import nn
 from tqdm import tqdm
+
+try:
+    import torch
+    import torch.nn.functional as F
+    from torch import nn
+    _TORCH_AVAILABLE = True
+except ImportError:
+    _TORCH_AVAILABLE = False
+    torch = None  # type: ignore
+    F = None  # type: ignore
+    nn = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -41,47 +49,53 @@ N_CHANNELS = 5
 # Lightweight ViT stub for environments without HuggingFace access
 # ---------------------------------------------------------------------------
 
-class _OpenPhenomStub(nn.Module):
+def _make_openphenom_stub(embedding_dim: int = OPENPHENOM_EMBEDDING_DIM):
     """
-    Lightweight stand-in for OpenPhenom when the actual model weights are
-    unavailable (e.g., during testing or CI). Produces random-but-deterministic
-    embeddings of the correct dimensionality.
+    Factory that returns an _OpenPhenomStub instance.
+
+    This deferred construction allows the module to be imported even when
+    PyTorch is not installed; the stub is only instantiated when actually
+    needed (i.e., when embed_images is called).
 
     In production, replace with:
-        from huggingface_hub import hf_hub_download
+        import timm
         model = timm.create_model("hf-hub:recursionpharma/OpenPhenom", pretrained=True)
     """
+    if not _TORCH_AVAILABLE:
+        raise ImportError(
+            "PyTorch is required for embedding extraction. "
+            "Install with: pip install torch"
+        )
+    import torch as _torch
+    import torch.nn as _nn
+    import torch.nn.functional as _F
 
-    def __init__(self, embedding_dim: int = OPENPHENOM_EMBEDDING_DIM):
-        super().__init__()
-        self.embedding_dim = embedding_dim
-        # Deterministic projection for reproducible output in tests
-        self._proj = nn.Linear(5 * 224 * 224, embedding_dim, bias=False)
-        nn.init.orthogonal_(self._proj.weight)
-        # Freeze weights — stub is not trained
-        for p in self.parameters():
-            p.requires_grad = False
+    class _Stub(_nn.Module):
+        def __init__(self, dim: int):
+            super().__init__()
+            self.embedding_dim = dim
+            self._proj = _nn.Linear(5 * 224 * 224, dim, bias=False)
+            _nn.init.orthogonal_(self._proj.weight)
+            for p in self.parameters():
+                p.requires_grad = False
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Parameters
-        ----------
-        x : Tensor, shape (B, 5, H, W)
-            Batch of 5-channel microscopy images.
+        def forward(self, x):
+            B = x.shape[0]
+            flat = x.view(B, -1)
+            if flat.shape[1] != self._proj.weight.shape[1]:
+                flat = _F.adaptive_avg_pool1d(
+                    flat.unsqueeze(1), self._proj.weight.shape[1]
+                ).squeeze(1)
+            emb = self._proj(flat)
+            return _F.normalize(emb, dim=-1)
 
-        Returns
-        -------
-        Tensor, shape (B, embedding_dim)
-            CLS token embeddings.
-        """
-        B = x.shape[0]
-        # Flatten and project — purely for shape correctness in tests
-        flat = x.view(B, -1)
-        if flat.shape[1] != self._proj.weight.shape[1]:
-            # Handle variable input sizes gracefully
-            flat = F.adaptive_avg_pool1d(flat.unsqueeze(1), self._proj.weight.shape[1]).squeeze(1)
-        emb = self._proj(flat)
-        return F.normalize(emb, dim=-1)
+    return _Stub(embedding_dim)
+
+
+# Keep the class name available for isinstance checks in tests
+class _OpenPhenomStub:
+    """Sentinel class for isinstance checks. Actual stub created by _make_openphenom_stub()."""
+    pass
 
 
 class EmbeddingProcessor:
@@ -120,9 +134,13 @@ class EmbeddingProcessor:
         elif config is not None:
             self._device = config.embedding.device
         else:
-            self._device = "cuda" if torch.cuda.is_available() else "cpu"
+            if _TORCH_AVAILABLE:
+                import torch as _torch
+                self._device = "cuda" if _torch.cuda.is_available() else "cpu"
+            else:
+                self._device = "cpu"
 
-        self._model: Optional[nn.Module] = None
+        self._model = None
 
     # ------------------------------------------------------------------
     # Model loading
@@ -133,7 +151,7 @@ class EmbeddingProcessor:
         model_name: str = "openphenom",
         cache_dir: Optional[str] = None,
         use_stub: bool = False,
-    ) -> nn.Module:
+    ):
         """
         Load the OpenPhenom ViT-MAE model.
 
@@ -156,7 +174,7 @@ class EmbeddingProcessor:
         """
         if use_stub:
             logger.info("Loading OpenPhenom stub model (weights not downloaded).")
-            model = _OpenPhenomStub(self._embedding_dim)
+            model = _make_openphenom_stub(self._embedding_dim)
             model.eval()
             model = model.to(self._device)
             self._model = model
@@ -165,7 +183,7 @@ class EmbeddingProcessor:
         try:
             import timm
 
-            logger.info(f"Loading OpenPhenom via timm from HuggingFace hub...")
+            logger.info("Loading OpenPhenom via timm from HuggingFace hub...")
             # timm supports hf-hub: prefix for HuggingFace models
             model = timm.create_model(
                 f"hf-hub:{OPENPHENOM_HUB_ID}",
@@ -188,7 +206,7 @@ class EmbeddingProcessor:
                 f"Falling back to stub model. "
                 f"For production use, ensure internet access and valid model weights."
             )
-            model = _OpenPhenomStub(self._embedding_dim)
+            model = _make_openphenom_stub(self._embedding_dim)
             model.eval()
             model = model.to(self._device)
             self._model = model
@@ -225,6 +243,12 @@ class EmbeddingProcessor:
         np.ndarray, shape (N, embedding_dim)
             Per-image embeddings.
         """
+        if not _TORCH_AVAILABLE:
+            raise ImportError(
+                "PyTorch is required for embed_images. Install with: pip install torch"
+            )
+        import torch as _torch
+
         if model is None:
             if self._model is None:
                 model = self.load_openphenom_model()
@@ -235,8 +259,8 @@ class EmbeddingProcessor:
             batch_size = self._batch_size
 
         # Convert to torch tensor
-        if not isinstance(images, torch.Tensor):
-            images = torch.from_numpy(np.array(images, dtype=np.float32))
+        if not isinstance(images, _torch.Tensor):
+            images = _torch.from_numpy(np.array(images, dtype=np.float32))
 
         # Handle channel-last format
         if images.ndim == 4 and images.shape[-1] == N_CHANNELS:
@@ -250,7 +274,7 @@ class EmbeddingProcessor:
         all_embeddings = []
 
         model.eval()
-        with torch.no_grad():
+        with _torch.no_grad():
             pbar = tqdm(
                 range(0, n, batch_size),
                 desc="Embedding images",

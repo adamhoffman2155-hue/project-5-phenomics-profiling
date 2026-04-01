@@ -1,6 +1,9 @@
 # Phenomics Perturbation Profiling Pipeline
 
-A production-grade bioinformatics pipeline for analyzing Recursion's RxRx3-core microscopy dataset using OpenPhenom (ViT-MAE) foundation model embeddings. This pipeline clusters CRISPR knockouts and compound perturbations by phenotypic similarity, performs mechanism-of-action (MoA) retrieval via cosine similarity, and runs pathway enrichment to build Maps of Biology.
+A production-grade bioinformatics pipeline for analyzing Recursion's RxRx3-core microscopy
+dataset using OpenPhenom (ViT-MAE) foundation model embeddings. This pipeline clusters CRISPR
+knockouts and compound perturbations by phenotypic similarity, performs mechanism-of-action
+(MoA) retrieval via cosine similarity, and runs pathway enrichment to build Maps of Biology.
 
 ---
 
