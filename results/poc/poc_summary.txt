@@ -1,0 +1,41 @@
+POC: MoA retrieval benchmark on LINCS Cell Painting
+============================================================
+
+Dataset: LINCS Cell Painting (cpg0004-lincs)
+  Batch: 2016_04_01_a549_48hr_batch1
+  Plates used: SQ00014812, SQ00014813, SQ00014814, SQ00014815, SQ00014816, SQ00014817, SQ00014818, SQ00014819
+  Source: https://cellpainting-gallery.s3.amazonaws.com/cpg0004-lincs/broad/workspace/profiles/
+  (Substitution for Recursion RxRx3-core, which requires an HF account.)
+
+Pipeline: per-compound mean profile over all replicate wells/doses;
+  feature-selected normalized profiles; cosine similarity NN retrieval.
+
+N wells (post-filter): 2808
+N features used: 241
+N unique compounds: 111
+N unique primary MoAs: 85
+N benchmarkable compounds (MoA with >=2 members): 46
+N eligible MoAs (>=2 members): 20
+
+Recall@K (cosine NN over morphological profile space):
+  recall@1  = 0.1304   random = 0.0319   (4.09x random)
+  recall@5  = 0.0957   random = 0.0319   (3.00x random)
+  recall@10 = 0.0587   random = 0.0319   (1.84x random)
+
+Top-10 most abundant MoA classes (N compounds in benchmark):
+     4  adrenergic receptor antagonist
+     3  HCV inhibitor
+     3  serotonin receptor agonist
+     3  acetylcholine receptor antagonist
+     3  EGFR inhibitor
+     2  leukotriene receptor antagonist
+     2  histamine receptor antagonist
+     2  gamma secretase inhibitor
+     2  ACAT inhibitor
+     2  angiotensin converting enzyme inhibitor
+
+Interpretation:
+  recall@5 is 3.00x the random baseline -- real MoA signal is recoverable from morphology.
+
+Reproduce:
+  python scripts/poc/run_poc.py
