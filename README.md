@@ -4,6 +4,16 @@
 
 This is the fifth project in a [computational biology portfolio](https://github.com/adamhoffman2155-hue/bioinformatics-portfolio). After Projects 1–4 focused on genomics and transcriptomics, this project explores a different modality — high-content microscopy — using Recursion's public RxRx3-core dataset and OpenPhenom foundation model embeddings. It represents a deliberate step toward TechBio phenomics, a growing area where computational biology meets drug discovery at scale.
 
+## At a Glance
+
+| | |
+|---|---|
+| **Stack** | OpenPhenom (ViT-MAE) · UMAP · HDBSCAN · K-means · gseapy · Docker |
+| **Data** | RxRx3-core (target); LINCS Cell Painting cpg0004 (POC substitute, public S3) |
+| **POC headline** | recall@1 = 0.13 (4.1× random); recall@5 = 0.096 (3.0× random) on 46 compounds / 20 MoAs |
+| **Role** | RxRx3 MoA retrieval framing; biological review of clusters and pathway enrichments; implementation AI-assisted |
+| **Portfolio** | Project 5 of 7 · [full narrative](https://github.com/adamhoffman2155-hue/bioinformatics-portfolio) |
+
 ## What It Does
 
 Analyzes perturbation phenotypes from high-content cell painting microscopy:
