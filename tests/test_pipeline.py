@@ -102,10 +102,13 @@ def test_recall_at_k_range(synthetic_data, config):
     assert recall[1] <= recall[5] + 1e-9
 
 
-def test_pathway_enrichment():
+def test_pathway_enrichment_mock():
+    """Mock enrichment: loud-fail safety net for environments without
+    gseapy. Uses use_mock=True explicitly so the test does not silently
+    depend on whether gseapy happens to be installed."""
     from src.pathway_analysis import enrich_cluster_genes
     genes = ["BRCA1", "TP53", "ATM", "PTEN", "RB1"]
-    result = enrich_cluster_genes(genes)
+    result = enrich_cluster_genes(genes, use_mock=True)
     assert isinstance(result, pd.DataFrame)
     assert "pathway" in result.columns
     assert "p_value" in result.columns
@@ -115,9 +118,25 @@ def test_pathway_enrichment():
 def test_pathway_enrichment_semicolon():
     from src.pathway_analysis import enrich_cluster_genes
     genes = ["BAX;BCL2;CASP3", "TP53;BRCA1"]
-    result = enrich_cluster_genes(genes)
+    result = enrich_cluster_genes(genes, use_mock=True)
     assert isinstance(result, pd.DataFrame)
     assert len(result) > 0
+
+
+def test_pathway_enrichment_loud_fail_without_gseapy():
+    """Regression guard for T2.6: if gseapy is not installed and the
+    caller did not opt into the mock, enrich_cluster_genes must raise
+    ImportError rather than silently fall back."""
+    import importlib
+    import sys
+    from src.pathway_analysis import enrich_cluster_genes
+
+    had_gseapy = "gseapy" in sys.modules or importlib.util.find_spec("gseapy") is not None
+    if had_gseapy:
+        pytest.skip("gseapy is installed; skipping loud-fail guard")
+
+    with pytest.raises(ImportError, match="gseapy"):
+        enrich_cluster_genes(["TP53"], use_mock=False)
 
 
 def test_jaccard_similarity():

@@ -1,5 +1,7 @@
 # Project 5: Phenomics Perturbation Profiling (RxRx3)
 
+[![CI](https://github.com/adamhoffman2155-hue/project-5-phenomics-profiling/actions/workflows/ci.yml/badge.svg)](https://github.com/adamhoffman2155-hue/project-5-phenomics-profiling/actions/workflows/ci.yml)
+
 **Research question:** Can foundation model embeddings map phenotypic similarity across perturbations?
 
 This is the fifth project in a [computational biology portfolio](https://github.com/adamhoffman2155-hue/bioinformatics-portfolio). After Projects 1–4 focused on genomics and transcriptomics, this project explores a different modality — high-content microscopy — using Recursion's public RxRx3-core dataset and OpenPhenom foundation model embeddings. It represents a deliberate step toward TechBio phenomics, a growing area where computational biology meets drug discovery at scale.

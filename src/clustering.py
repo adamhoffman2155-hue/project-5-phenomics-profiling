@@ -30,12 +30,14 @@ def run_umap(
     embeddings: NDArray[np.float64],
     n_components: int = 2,
     config: Optional[object] = None,
+    allow_fallback: bool = False,
 ) -> NDArray[np.float64]:
-    """Reduce embedding dimensionality with UMAP (or t-SNE fallback).
+    """Reduce embedding dimensionality with UMAP.
 
-    If ``umap-learn`` is installed it will be used. Otherwise the
-    function transparently falls back to scikit-learn's t-SNE so the
-    rest of the pipeline still works.
+    Fails loud by default when ``umap-learn`` is not installed so the
+    pipeline does not silently swap in t-SNE and publish results under
+    the wrong algorithm name. Pass ``allow_fallback=True`` to permit
+    a documented t-SNE fallback for constrained environments.
 
     Parameters
     ----------
@@ -44,6 +46,9 @@ def run_umap(
         Target dimensionality (default 2).
     config : PipelineConfig, optional
         If provided, UMAP hyper-parameters are read from the config.
+    allow_fallback : bool, default False
+        When True, fall back to scikit-learn t-SNE if umap-learn is
+        missing. When False (default), raise ImportError.
 
     Returns
     -------
@@ -63,23 +68,18 @@ def run_umap(
 
     try:
         import umap  # type: ignore[import-untyped]
+    except ImportError as exc:
+        if not allow_fallback:
+            raise ImportError(
+                "umap-learn is required for run_umap(). Install via "
+                "`pip install umap-learn` (already declared in "
+                "requirements.txt) or pass allow_fallback=True to use "
+                "a documented t-SNE fallback."
+            ) from exc
 
-        logger.info(
-            "Running UMAP (n_neighbors=%d, min_dist=%.2f, metric=%s)",
-            n_neighbors, min_dist, metric,
-        )
-        reducer = umap.UMAP(
-            n_components=n_components,
-            n_neighbors=n_neighbors,
-            min_dist=min_dist,
-            metric=metric,
-            random_state=seed,
-        )
-        coords = reducer.fit_transform(embeddings)
-    except ImportError:
         logger.warning(
             "umap-learn not installed \u2014 falling back to t-SNE "
-            "(pip install umap-learn for UMAP support)"
+            "(allow_fallback=True was set explicitly)"
         )
         from sklearn.manifold import TSNE
 
@@ -93,7 +93,20 @@ def run_umap(
             learning_rate="auto",
         )
         coords = tsne.fit_transform(embeddings)
+        return coords.astype(np.float64)
 
+    logger.info(
+        "Running UMAP (n_neighbors=%d, min_dist=%.2f, metric=%s)",
+        n_neighbors, min_dist, metric,
+    )
+    reducer = umap.UMAP(
+        n_components=n_components,
+        n_neighbors=n_neighbors,
+        min_dist=min_dist,
+        metric=metric,
+        random_state=seed,
+    )
+    coords = reducer.fit_transform(embeddings)
     logger.info("Dimensionality reduction complete \u2014 output shape %s", coords.shape)
     return coords.astype(np.float64)
 
@@ -105,16 +118,22 @@ def run_umap(
 def run_hdbscan(
     embeddings_2d: NDArray[np.float64],
     min_cluster_size: int = 15,
+    allow_fallback: bool = False,
 ) -> NDArray[np.int64]:
     """Cluster low-dimensional embeddings with HDBSCAN.
 
-    Falls back to DBSCAN from scikit-learn if ``hdbscan`` is not
-    installed.
+    Fails loud by default when ``hdbscan`` is not installed \u2014 DBSCAN has
+    different behavior (no hierarchical extraction, no noise scoring)
+    and silently swapping would mis-label published results. Pass
+    ``allow_fallback=True`` to permit a documented DBSCAN fallback.
 
     Parameters
     ----------
     embeddings_2d : ndarray of shape (n_samples, n_features)
     min_cluster_size : int
+    allow_fallback : bool, default False
+        When True, fall back to scikit-learn DBSCAN if hdbscan is
+        missing. When False (default), raise ImportError.
 
     Returns
     -------
@@ -123,21 +142,20 @@ def run_hdbscan(
     """
     try:
         import hdbscan as hdb  # type: ignore[import-untyped]
+    except ImportError as exc:
+        if not allow_fallback:
+            raise ImportError(
+                "hdbscan is required for run_hdbscan(). Install via "
+                "`pip install hdbscan` (already declared in "
+                "requirements.txt) or pass allow_fallback=True to use "
+                "a documented DBSCAN fallback."
+            ) from exc
 
-        logger.info("Running HDBSCAN (min_cluster_size=%d)", min_cluster_size)
-        clusterer = hdb.HDBSCAN(
-            min_cluster_size=min_cluster_size,
-            gen_min_span_tree=True,
-        )
-        labels = clusterer.fit_predict(embeddings_2d)
-    except ImportError:
         logger.warning(
             "hdbscan not installed \u2014 falling back to sklearn DBSCAN "
-            "(pip install hdbscan for HDBSCAN support)"
+            "(allow_fallback=True was set explicitly)"
         )
         from sklearn.cluster import DBSCAN
-
-        # Estimate eps from the data
         from sklearn.neighbors import NearestNeighbors
 
         k = min(min_cluster_size, embeddings_2d.shape[0] - 1)
@@ -148,12 +166,22 @@ def run_hdbscan(
 
         clusterer = DBSCAN(eps=eps, min_samples=max(3, min_cluster_size // 3))
         labels = clusterer.fit_predict(embeddings_2d)
+        n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+        n_noise = int((labels == -1).sum())
+        logger.info("DBSCAN fallback: %d clusters, %d noise points",
+                    n_clusters, n_noise)
+        return np.asarray(labels, dtype=np.int64)
 
+    logger.info("Running HDBSCAN (min_cluster_size=%d)", min_cluster_size)
+    clusterer = hdb.HDBSCAN(
+        min_cluster_size=min_cluster_size,
+        gen_min_span_tree=True,
+    )
+    labels = clusterer.fit_predict(embeddings_2d)
     n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
     n_noise = int((labels == -1).sum())
-    logger.info(
-        "HDBSCAN/DBSCAN found %d clusters, %d noise points", n_clusters, n_noise
-    )
+    logger.info("HDBSCAN found %d clusters, %d noise points",
+                n_clusters, n_noise)
     return np.asarray(labels, dtype=np.int64)
 
 

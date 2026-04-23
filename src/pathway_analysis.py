@@ -56,19 +56,25 @@ _DEFAULT_GENE_SETS: Dict[str, List[str]] = {
 def enrich_cluster_genes(
     cluster_genes: List[str],
     gene_sets: Optional[Dict[str, List[str]]] = None,
+    use_mock: bool = False,
 ) -> pd.DataFrame:
     """Run gene-set enrichment for a list of cluster genes.
 
-    If ``gseapy`` is available, the function attempts to use the Enrichr
-    API. Otherwise it falls back to a simple Fisher-exact-style mock
-    enrichment against the built-in pathway gene sets.
+    By default uses ``gseapy``'s Enrichr client against KEGG_2021_Human.
+    When ``use_mock=True`` (or when gseapy is explicitly unavailable AND
+    ``use_mock=True``) runs an in-process hypergeometric enrichment over
+    the small built-in pathway sets defined in ``_DEFAULT_GENE_SETS`` \u2014
+    useful for offline tests. Without ``use_mock``, a missing gseapy is
+    a loud ImportError rather than a silent swap.
 
     Parameters
     ----------
     cluster_genes : list of str
         Gene symbols found in the cluster.
     gene_sets : dict, optional
-        Mapping of pathway name to gene list. Defaults to built-in sets.
+        Mapping of pathway name to gene list. Only used in mock mode.
+    use_mock : bool, default False
+        When True, skip gseapy entirely and use the built-in mock.
 
     Returns
     -------
@@ -87,9 +93,17 @@ def enrich_cluster_genes(
             expanded.append(g)
     cluster_genes = list(set(expanded))
 
-    # Try gseapy first
-    try:
-        import gseapy as gp  # type: ignore[import-untyped]
+    if not use_mock:
+        try:
+            import gseapy as gp  # type: ignore[import-untyped]
+        except ImportError as exc:
+            raise ImportError(
+                "gseapy is required for enrich_cluster_genes(). Install "
+                "via `pip install gseapy` (already declared in "
+                "requirements.txt) or pass use_mock=True for the "
+                "built-in hypergeometric enrichment over a small "
+                "default pathway set (useful for tests, not publication)."
+            ) from exc
 
         logger.info("Using gseapy Enrichr for enrichment analysis")
         enr = gp.enrichr(
@@ -110,13 +124,8 @@ def enrich_cluster_genes(
         result_df["jaccard"] = 0.0
         return result_df.head(20)
 
-    except (ImportError, Exception) as exc:
-        logger.info(
-            "gseapy not available or Enrichr failed (%s) \u2014 using mock enrichment",
-            type(exc).__name__,
-        )
-
     # Mock enrichment: Jaccard + hypergeometric p-value approximation
+    logger.info("Running mock pathway enrichment (use_mock=True)")
     from scipy.stats import hypergeom
 
     query_set: Set[str] = set(cluster_genes)
