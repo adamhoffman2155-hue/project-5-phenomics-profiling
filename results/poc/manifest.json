@@ -1,0 +1,39 @@
+{
+  "$schema": "https://github.com/adamhoffman2155-hue/bioinformatics-portfolio/blob/main/shared/poc-manifest.schema.json",
+  "project": "project-5-phenomics-profiling",
+  "poc_title": "MoA retrieval benchmark on LINCS Cell Painting",
+  "poc_version": "v1",
+  "dataset": {
+    "name": "LINCS Cell Painting (cpg0004-lincs)",
+    "batch": "2016_04_01_a549_48hr_batch1",
+    "plates": [
+      "SQ00014812", "SQ00014813", "SQ00014814", "SQ00014815",
+      "SQ00014816", "SQ00014817", "SQ00014818", "SQ00014819"
+    ],
+    "source": "https://cellpainting-gallery.s3.amazonaws.com/cpg0004-lincs/broad/workspace/profiles/",
+    "substitute_for": "Recursion RxRx3-core (requires HF account)",
+    "n_wells_post_filter": 2808,
+    "n_features_used": 241,
+    "n_unique_compounds": 111,
+    "n_unique_moas": 85,
+    "n_benchmarkable_compounds": 46,
+    "n_eligible_moas": 20
+  },
+  "script": "scripts/poc/run_poc.py",
+  "generated_at": "2026-04-23",
+  "headline_metric": {
+    "name": "Recall@5 (cosine NN over morphological profiles)",
+    "value": 0.0957,
+    "random_baseline": 0.0319,
+    "ratio_vs_random": 3.0
+  },
+  "secondary_metrics": [
+    {"name": "Recall@1", "value": 0.1304, "random_baseline": 0.0319, "ratio_vs_random": 4.09},
+    {"name": "Recall@10", "value": 0.0587, "random_baseline": 0.0319, "ratio_vs_random": 1.84}
+  ],
+  "headline_text": "Recall@5 = 0.0957 (3.00× random baseline) — real MoA signal is recoverable from morphology.",
+  "artifacts": [
+    "results/poc/poc_summary.txt",
+    "results/poc/recall_at_k.csv"
+  ]
+}
