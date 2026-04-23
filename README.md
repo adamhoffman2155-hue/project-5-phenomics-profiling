@@ -52,6 +52,7 @@ project-5-phenomics-profiling/
 ├── data/
 ├── results/
 │   └── poc/                         # POC outputs (recall CSV, UMAP, summary)
+├── Dockerfile
 ├── requirements.txt
 ├── environment.yml
 └── LICENSE
@@ -63,8 +64,22 @@ project-5-phenomics-profiling/
 git clone https://github.com/adamhoffman2155-hue/project-5-phenomics-profiling.git
 cd project-5-phenomics-profiling
 
+# Choose one environment
+docker build -t phenomics . && docker run -it -v $(pwd):/workspace phenomics bash
+#   or
+conda env create -f environment.yml && conda activate phenomics-profiling
+#   or
 pip install -r requirements.txt
+
+# Full pipeline
 python scripts/run_pipeline.py
+
+# Individual stages
+python scripts/run_clustering.py
+python scripts/run_retrieval.py
+
+# Quick proof-of-concept run (~1 min, public S3 only)
+python scripts/poc/run_poc.py
 ```
 
 ## Proof of Concept
