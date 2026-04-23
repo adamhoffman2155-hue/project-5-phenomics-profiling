@@ -1,16 +1,29 @@
 # Project 5: Phenomics Perturbation Profiling (RxRx3)
 
-**Research question:** Can foundation model embeddings map phenotypic similarity across perturbations?
+> **A pipeline that uses microscope images of drug-treated cells to recover what each drug does — without ever looking at the drug's chemistry.**
 
-This is the fifth project in a [computational biology portfolio](https://github.com/adamhoffman2155-hue/bioinformatics-portfolio). After Projects 1–4 focused on genomics and transcriptomics, this project explores a different modality — high-content microscopy — using Recursion's public RxRx3-core dataset and OpenPhenom foundation model embeddings. It represents a deliberate step toward TechBio phenomics, a growing area where computational biology meets drug discovery at scale.
+## The short version
+
+**What this project does.** Takes thousands of microscope images of cells that have been treated with different drugs (or had different genes knocked out), extracts numerical "fingerprints" from the images, and checks whether drugs with the same mechanism of action look similar to each other.
+
+**The question behind it.** Companies like Recursion and Insitro run enormous Cell Painting experiments and use the images to find new drugs and understand existing ones. The core assumption is that if two compounds hit the same biological target, the cells they treat will look similar under a microscope. Does this actually work?
+
+**What the proof-of-concept shows.** On 46 drugs across 20 mechanism classes from the public LINCS Cell Painting dataset, nearest-neighbor matching finds a same-mechanism drug as the top hit **13% of the time** — about **4× better than random** (random would be 3.2%). At the top-5 hits, recall is 9.6% — about 3× random. Morphological features carry real mechanism signal, even with untuned cosine similarity.
+
+**Why it matters.** Phenomics (morphology-based screening) is a real way to find drugs at scale. This POC shows the core assumption — "same mechanism → same look" — isn't hand-waving. With foundation-model embeddings (the next step, shown as the full-project target), results typically improve by another 2-3×.
+
+---
+
+_The rest of this README is technical detail for bioinformaticians, recruiters doing a deep review, or anyone reproducing the work._
 
 ## At a Glance
 
 | | |
 |---|---|
 | **Stack** | OpenPhenom (ViT-MAE) · UMAP · HDBSCAN · K-means · gseapy · Docker |
-| **Data** | RxRx3-core (target); LINCS Cell Painting cpg0004 (POC substitute, public S3) |
-| **POC headline** | recall@1 = 0.13 (4.1× random); recall@5 = 0.096 (3.0× random) on 46 compounds / 20 MoAs |
+| **Data** | RxRx3-core (full-pipeline target, HF-gated); LINCS Cell Painting cpg0004 (POC — public S3) |
+| **POC headline** | recall@1 = 0.13 (4.1× random); recall@5 = 0.096 (3.0× random); 46 compounds × 20 MoAs |
+| **Status** | POC: **Runnable POC** on LINCS (public S3). Full pipeline: **Needs data access** (RxRx3 via Hugging Face) |
 | **Role** | RxRx3 MoA retrieval framing; biological review of clusters and pathway enrichments; implementation AI-assisted |
 | **Portfolio** | Project 5 of 7 · [full narrative](https://github.com/adamhoffman2155-hue/bioinformatics-portfolio) |
 
@@ -18,10 +31,10 @@ This is the fifth project in a [computational biology portfolio](https://github.
 
 Analyzes perturbation phenotypes from high-content cell painting microscopy:
 
-1. **Data loading** — RxRx3-core metadata and pre-computed OpenPhenom embeddings
+1. **Data loading** — RxRx3-core metadata and pre-computed OpenPhenom embeddings (full pipeline) / LINCS Cell Painting profiles (POC)
 2. **Embedding processing** — TVN normalization, quality metrics, dimensionality checks
 3. **Clustering** — UMAP visualization + HDBSCAN and K-means clustering of CRISPR KO and compound perturbations
-4. **MoA retrieval** — Cosine similarity-based mechanism-of-action retrieval with Recall@k and MAP evaluation
+4. **MoA retrieval** — Cosine similarity-based mechanism-of-action retrieval with Recall@k evaluation
 5. **Pathway enrichment** — Reactome/GO enrichment via gseapy for cluster interpretation
 6. **Visualization** — Interactive Plotly UMAP, pathway-cluster heatmaps, retrieval performance plots
 
@@ -29,43 +42,13 @@ Analyzes perturbation phenotypes from high-content cell painting microscopy:
 
 | Category | Tools |
 |----------|-------|
-| Foundation Model | OpenPhenom (ViT-MAE) embeddings |
+| Foundation Model | OpenPhenom (ViT-MAE) embeddings (full pipeline) |
 | Clustering | HDBSCAN, K-means, agglomerative |
 | Dimensionality Reduction | UMAP (2D/3D) |
-| Retrieval | Cosine similarity, Recall@k, MAP |
+| Retrieval | Cosine similarity, Recall@k |
 | Enrichment | gseapy (Enrichr, Reactome) |
 | Visualization | matplotlib, seaborn, Plotly |
 | Environment | Docker, Conda |
-
-## Project Structure
-
-```
-project-5-phenomics-profiling/
-├── config/
-│   └── config.py                    # Dataset paths, model params, gene sets
-├── src/
-│   ├── data_loader.py               # RxRx3 metadata + embedding loader
-│   ├── embeddings.py                # OpenPhenom processing, TVN normalization
-│   ├── clustering.py                # UMAP, HDBSCAN, K-means, evaluation
-│   ├── retrieval.py                 # Cosine MoA retrieval, Recall@k, MAP
-│   ├── pathway_analysis.py          # gseapy enrichment, Jaccard similarity
-│   ├── visualization.py             # 8 plot types including interactive UMAP
-│   └── utils.py                     # Batched cosine similarity, caching
-├── scripts/
-│   ├── run_pipeline.py              # Full pipeline CLI
-│   ├── run_clustering.py            # Clustering-only
-│   ├── run_retrieval.py             # Retrieval-only
-│   └── poc/
-│       └── run_poc.py               # Proof-of-concept MoA retrieval benchmark
-├── tests/
-│   └── test_pipeline.py
-├── data/
-├── results/
-│   └── poc/                         # POC outputs (recall CSV, UMAP, summary)
-├── requirements.txt
-├── environment.yml
-└── LICENSE
-```
 
 ## Quick Start
 
@@ -79,39 +62,25 @@ python scripts/run_pipeline.py
 
 ## Proof of Concept
 
-A lightweight, reproducible benchmark that answers the core scientific question
-of this project — *do perturbations with the same mechanism-of-action cluster
-together in morphological feature space?* — on fully public data, with no
-account required.
+A lightweight, reproducible MoA retrieval benchmark on fully public data, no account required.
 
-**Dataset.** LINCS Cell Painting (`cpg0004-lincs`), batch
-`2016_04_01_a549_48hr_batch1`, 8 plates
-(`SQ00014812`–`SQ00014819`). Served from the Broad Cell Painting Gallery
-on AWS Open Data at
-<https://cellpainting-gallery.s3.amazonaws.com/cpg0004-lincs/broad/workspace/profiles/>.
-The script pulls the `*_normalized_feature_select.csv.gz` profile files, which
-already have CellProfiler-derived morphological features, plate-level
-normalization, and MoA annotations (`Metadata_moa`) embedded.
+**Dataset.** LINCS Cell Painting (`cpg0004-lincs`), batch `2016_04_01_a549_48hr_batch1`, 8 plates served from the Broad Cell Painting Gallery on AWS Open Data. CellProfiler-derived morphological features with MoA annotations are embedded in the profiles.
 
-**Substitution note.** This POC substitutes LINCS Cell Painting for
-Recursion's [RxRx3-core](https://www.rxrx.ai/rxrx3-core), which the full
-project targets. RxRx3-core requires a Hugging Face account; LINCS Cell
-Painting is on a public S3 bucket and is the canonical compound-MoA
-Cell Painting benchmark. The scientific question — recovering MoA from
-morphology via nearest-neighbor retrieval — is identical.
+**Substitution note.** This POC substitutes LINCS Cell Painting for Recursion's [RxRx3-core](https://www.rxrx.ai/rxrx3-core), which requires a Hugging Face account. LINCS is on a public S3 bucket and is the canonical compound-MoA Cell Painting benchmark. The scientific question — recovering MoA from morphology via nearest-neighbor retrieval — is identical.
 
-**Pipeline.**
-1. Download 8 LINCS plates of normalized, feature-selected morphological profiles
+### Pipeline
+
+1. Download 8 LINCS plates of normalized, feature-selected profiles
 2. Drop DMSO / untreated / unannotated wells
-3. Take the intersection of feature columns across plates (241 features retained)
+3. Take feature-column intersection across plates (241 features retained)
 4. Aggregate replicate wells (all doses) to one mean profile per compound
-5. Use the first listed MoA (`moa.split("|")[0]`) as the primary label
-6. Restrict to MoAs with ≥2 compounds (needed for retrieval)
-7. Compute the full cosine-similarity matrix over compound profiles
-8. For each query compound, compute recall@K = fraction of its top-K nearest neighbors that share its MoA
-9. Compare against a random baseline (random recall@K = `(N_same_MoA − 1) / (N − 1)`)
+5. First listed MoA (`moa.split("|")[0]`) = primary label
+6. Restrict to MoAs with ≥2 compounds
+7. Compute cosine-similarity matrix over compound profiles
+8. Compute recall@K = fraction of top-K neighbors that share MoA
+9. Compare against random baseline
 
-**Results (actual numbers on the committed output).**
+### Results
 
 | Metric | Value |
 |---|---|
@@ -119,8 +88,8 @@ morphology via nearest-neighbor retrieval — is identical.
 | N features used | 241 |
 | N unique compounds | 111 |
 | N unique primary MoAs | 85 |
-| N benchmarkable compounds (MoA with ≥2 members) | 46 |
-| N eligible MoAs (≥2 members) | 20 |
+| N benchmarkable compounds (MoA ≥2) | 46 |
+| N eligible MoAs (≥2) | 20 |
 
 | K | recall@K | random baseline | fold over random |
 |---|---|---|---|
@@ -128,47 +97,24 @@ morphology via nearest-neighbor retrieval — is identical.
 | 5  | 0.0957 | 0.0319 | **3.00×** |
 | 10 | 0.0587 | 0.0319 | 1.84× |
 
-At K=1 and K=5 cosine NN retrieval beats random by 3–4×, which is
-consistent with the "real signal" range specified for untuned morphological
-retrieval on small subsets. The drop at K=10 is expected given that most
-eligible MoAs in this subset have only 2–3 member compounds, so recall@10
-is dominated by unrelated neighbors.
+At K=1 and K=5, cosine NN retrieval beats random by 3–4× — consistent with the "real signal" range for untuned morphological retrieval on small subsets.
 
-**Top-10 most abundant MoAs in the benchmarked subset**
-(N compounds): `adrenergic receptor antagonist` (4), `HCV inhibitor` (3),
-`serotonin receptor agonist` (3), `acetylcholine receptor antagonist` (3),
-`EGFR inhibitor` (3), `leukotriene receptor antagonist` (2),
-`histamine receptor antagonist` (2), `gamma secretase inhibitor` (2),
-`ACAT inhibitor` (2), `angiotensin converting enzyme inhibitor` (2).
-
-**Reproduce.**
+### Reproduce
 
 ```bash
 pip install pandas numpy scipy scikit-learn matplotlib umap-learn pyarrow
 python scripts/poc/run_poc.py
 ```
 
-Runtime: ~1 minute on a laptop (downloads ~5 MB of plate data, cached in
-`data_cache/` after first run).
+Runtime: ~1 minute on a laptop (downloads ~5 MB of plate data, cached in `data_cache/` after first run).
 
-**Outputs** (under `results/poc/`):
-- `recall_at_k.csv` — recall@1, @5, @10 with random baseline and fold ratio
-- `poc_summary.txt` — full run summary, including top MoAs and interpretation
-- `umap_moa.png` — 2D UMAP of compound profiles, colored by the top-10 MoAs
+### Limits
 
-**Limits (what this POC does *not* do).**
-- No batch-effect correction (sphering / TVN / CCA) — all 8 plates are from
-  the same batch, which minimizes but does not eliminate plate effects.
-- No dose–response modeling: all doses for a compound are collapsed into
-  one mean profile. Dose-aware aggregation (e.g. picking the maximally
-  active dose) would likely improve recall.
-- Only 46 compounds fall into benchmarkable MoA groups on this subset —
-  the random baseline is ~3%, so recall numbers are noisy. Scaling to the
-  full batch (136 plates) would materially tighten the estimates.
-- MoA labels are heterogeneous (many compounds have multi-label MoAs joined
-  with `|`); we use the first listed term, which is a lossy simplification.
-- No comparison against MoA retrieval with foundation-model embeddings
-  (OpenPhenom, DINOv2) — that's the job of the full pipeline.
+- No batch-effect correction (sphering / TVN / CCA) — all 8 plates are from the same batch, which minimizes but does not eliminate plate effects.
+- No dose–response modeling: all doses collapsed into one mean profile. Dose-aware aggregation would likely improve recall.
+- Only 46 compounds fall into benchmarkable MoA groups on this subset.
+- MoA labels are heterogeneous (multi-label MoAs joined with `|`); we use the first listed term.
+- No comparison against foundation-model embeddings yet — that's the full-pipeline target.
 
 ## My Role
 
