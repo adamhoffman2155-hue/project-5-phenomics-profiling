@@ -7,8 +7,14 @@
     "name": "LINCS Cell Painting (cpg0004-lincs)",
     "batch": "2016_04_01_a549_48hr_batch1",
     "plates": [
-      "SQ00014812", "SQ00014813", "SQ00014814", "SQ00014815",
-      "SQ00014816", "SQ00014817", "SQ00014818", "SQ00014819"
+      "SQ00014812",
+      "SQ00014813",
+      "SQ00014814",
+      "SQ00014815",
+      "SQ00014816",
+      "SQ00014817",
+      "SQ00014818",
+      "SQ00014819"
     ],
     "source": "https://cellpainting-gallery.s3.amazonaws.com/cpg0004-lincs/broad/workspace/profiles/",
     "substitute_for": "Recursion RxRx3-core (requires HF account)",
@@ -28,10 +34,20 @@
     "ratio_vs_random": 3.0
   },
   "secondary_metrics": [
-    {"name": "Recall@1", "value": 0.1304, "random_baseline": 0.0319, "ratio_vs_random": 4.09},
-    {"name": "Recall@10", "value": 0.0587, "random_baseline": 0.0319, "ratio_vs_random": 1.84}
+    {
+      "name": "Recall@1",
+      "value": 0.1304,
+      "random_baseline": 0.0319,
+      "ratio_vs_random": 4.09
+    },
+    {
+      "name": "Recall@10",
+      "value": 0.0587,
+      "random_baseline": 0.0319,
+      "ratio_vs_random": 1.84
+    }
   ],
-  "headline_text": "Recall@5 = 0.0957 (3.00× random baseline) — real MoA signal is recoverable from morphology.",
+  "headline_text": "Recall@5 = 0.0957 (3.00\u00d7 random baseline) \u2014 real MoA signal is recoverable from morphology.",
   "artifacts": [
     "results/poc/poc_summary.txt",
     "results/poc/recall_at_k.csv"

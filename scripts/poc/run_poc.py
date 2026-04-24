@@ -303,6 +303,15 @@ def main() -> int:
     (RESULTS / "poc_summary.txt").write_text(summary)
     print(summary)
 
+    # Regenerate results/poc/manifest.json so the portfolio site's
+    # headline numbers stay in sync with the freshly-written CSVs.
+    print("[8/7] Rebuilding manifest.json")
+    import subprocess
+    subprocess.run(
+        [sys.executable, str(Path(__file__).with_name("build_manifest.py"))],
+        check=True,
+    )
+
     return 0
 
 
