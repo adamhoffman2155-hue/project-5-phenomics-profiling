@@ -10,8 +10,6 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import List, Tuple
-
 
 # ---------------------------------------------------------------------------
 # Embedding parameters (OpenPhenom ViT-MAE)
@@ -43,17 +41,17 @@ UMAP_METRIC: str = "cosine"
 # ---------------------------------------------------------------------------
 # Retrieval evaluation
 # ---------------------------------------------------------------------------
-TOP_K_VALUES: List[int] = [1, 5, 10, 20]
+TOP_K_VALUES: list[int] = [1, 5, 10, 20]
 
 # ---------------------------------------------------------------------------
 # Perturbation types
 # ---------------------------------------------------------------------------
-PERTURBATION_TYPES: List[str] = ["crispr_ko", "compound"]
+PERTURBATION_TYPES: list[str] = ["crispr_ko", "compound"]
 
 # ---------------------------------------------------------------------------
 # Mechanism-of-Action (MoA) categories
 # ---------------------------------------------------------------------------
-MOA_CATEGORIES: List[str] = [
+MOA_CATEGORIES: list[str] = [
     "apoptosis_inducer",
     "cell_cycle_inhibitor",
     "dna_damage_response",
@@ -71,29 +69,114 @@ MOA_CATEGORIES: List[str] = [
 # ---------------------------------------------------------------------------
 PATHWAY_GENE_SETS = {
     "apoptosis": [
-        "BAX", "BCL2", "CASP3", "CASP8", "CASP9", "CYCS", "APAF1",
-        "BID", "BAK1", "XIAP", "BIRC5", "MCL1", "FADD", "FAS",
-        "TNFRSF10A", "TNFRSF10B", "DIABLO", "PMAIP1", "BBC3", "BOK",
+        "BAX",
+        "BCL2",
+        "CASP3",
+        "CASP8",
+        "CASP9",
+        "CYCS",
+        "APAF1",
+        "BID",
+        "BAK1",
+        "XIAP",
+        "BIRC5",
+        "MCL1",
+        "FADD",
+        "FAS",
+        "TNFRSF10A",
+        "TNFRSF10B",
+        "DIABLO",
+        "PMAIP1",
+        "BBC3",
+        "BOK",
     ],
     "cell_cycle": [
-        "CDK1", "CDK2", "CDK4", "CDK6", "CCND1", "CCNE1", "CCNA2",
-        "CCNB1", "RB1", "TP53", "CDKN1A", "CDKN2A", "E2F1", "CDC25A",
-        "PLK1", "AURKA", "AURKB", "BUB1", "MAD2L1", "TTK",
+        "CDK1",
+        "CDK2",
+        "CDK4",
+        "CDK6",
+        "CCND1",
+        "CCNE1",
+        "CCNA2",
+        "CCNB1",
+        "RB1",
+        "TP53",
+        "CDKN1A",
+        "CDKN2A",
+        "E2F1",
+        "CDC25A",
+        "PLK1",
+        "AURKA",
+        "AURKB",
+        "BUB1",
+        "MAD2L1",
+        "TTK",
     ],
     "dna_repair": [
-        "BRCA1", "BRCA2", "ATM", "ATR", "CHEK1", "CHEK2", "RAD51",
-        "TP53BP1", "MDC1", "RNF8", "PARP1", "XRCC1", "MLH1", "MSH2",
-        "MSH6", "ERCC1", "XPC", "XPA", "POLB", "LIG3",
+        "BRCA1",
+        "BRCA2",
+        "ATM",
+        "ATR",
+        "CHEK1",
+        "CHEK2",
+        "RAD51",
+        "TP53BP1",
+        "MDC1",
+        "RNF8",
+        "PARP1",
+        "XRCC1",
+        "MLH1",
+        "MSH2",
+        "MSH6",
+        "ERCC1",
+        "XPC",
+        "XPA",
+        "POLB",
+        "LIG3",
     ],
     "immune_response": [
-        "TNF", "IL6", "IL1B", "IFNG", "CXCL8", "CCL2", "NFKB1",
-        "RELA", "JAK1", "JAK2", "STAT1", "STAT3", "TLR4", "MYD88",
-        "IRAK4", "TRAF6", "IRF3", "CGAS", "STING1", "MAVS",
+        "TNF",
+        "IL6",
+        "IL1B",
+        "IFNG",
+        "CXCL8",
+        "CCL2",
+        "NFKB1",
+        "RELA",
+        "JAK1",
+        "JAK2",
+        "STAT1",
+        "STAT3",
+        "TLR4",
+        "MYD88",
+        "IRAK4",
+        "TRAF6",
+        "IRF3",
+        "CGAS",
+        "STING1",
+        "MAVS",
     ],
     "metabolism": [
-        "HK2", "PKM", "LDHA", "PDK1", "CS", "IDH1", "IDH2",
-        "OGDH", "SDHA", "SDHB", "FH", "MDH2", "ACLY", "FASN",
-        "SCD", "CPT1A", "ACOX1", "GLS", "SLC1A5", "SLC7A11",
+        "HK2",
+        "PKM",
+        "LDHA",
+        "PDK1",
+        "CS",
+        "IDH1",
+        "IDH2",
+        "OGDH",
+        "SDHA",
+        "SDHB",
+        "FH",
+        "MDH2",
+        "ACLY",
+        "FASN",
+        "SCD",
+        "CPT1A",
+        "ACOX1",
+        "GLS",
+        "SLC1A5",
+        "SLC7A11",
     ],
 }
 
@@ -134,9 +217,9 @@ class PipelineConfig:
     umap_min_dist: float = UMAP_MIN_DIST
     umap_n_components: int = UMAP_N_COMPONENTS
     umap_metric: str = UMAP_METRIC
-    top_k_values: List[int] = field(default_factory=lambda: list(TOP_K_VALUES))
-    perturbation_types: List[str] = field(default_factory=lambda: list(PERTURBATION_TYPES))
-    moa_categories: List[str] = field(default_factory=lambda: list(MOA_CATEGORIES))
+    top_k_values: list[int] = field(default_factory=lambda: list(TOP_K_VALUES))
+    perturbation_types: list[str] = field(default_factory=lambda: list(PERTURBATION_TYPES))
+    moa_categories: list[str] = field(default_factory=lambda: list(MOA_CATEGORIES))
     random_seed: int = RANDOM_SEED
     output_dir: str = OUTPUT_DIR
     data_dir: str = DATA_DIR
@@ -177,15 +260,15 @@ class PipelineConfig:
         return self.umap_min_dist
 
     @property
-    def TOP_K_VALUES(self) -> List[int]:  # noqa: N802
+    def TOP_K_VALUES(self) -> list[int]:  # noqa: N802
         return self.top_k_values
 
     @property
-    def PERTURBATION_TYPES(self) -> List[str]:  # noqa: N802
+    def PERTURBATION_TYPES(self) -> list[str]:  # noqa: N802
         return self.perturbation_types
 
     @property
-    def MOA_CATEGORIES(self) -> List[str]:  # noqa: N802
+    def MOA_CATEGORIES(self) -> list[str]:  # noqa: N802
         return self.moa_categories
 
     @property

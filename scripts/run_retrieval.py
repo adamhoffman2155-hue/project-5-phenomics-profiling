@@ -2,17 +2,17 @@
 """MoA retrieval evaluation pipeline."""
 
 import argparse
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from config.config import PipelineConfig
 from src.data_loader import generate_synthetic_data
 from src.embeddings import tvn_normalize
-from src.retrieval import compute_recall_at_k, compute_map
+from src.retrieval import compute_map, compute_recall_at_k
+from src.utils import ensure_dir, set_seed, setup_logging
 from src.visualization import plot_retrieval_performance
-from src.utils import setup_logging, set_seed, ensure_dir
 
 
 def main():

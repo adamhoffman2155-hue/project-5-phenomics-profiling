@@ -23,17 +23,15 @@ Pipeline:
 
 from __future__ import annotations
 
-import io
-import os
 import sys
-import gzip
 import urllib.request
 from pathlib import Path
 
+import matplotlib
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -48,8 +46,14 @@ BUCKET = "https://cellpainting-gallery.s3.amazonaws.com"
 BATCH = "2016_04_01_a549_48hr_batch1"
 # Pick 8 plates from the batch to get ~100+ unique compounds.
 PLATES = [
-    "SQ00014812", "SQ00014813", "SQ00014814", "SQ00014815",
-    "SQ00014816", "SQ00014817", "SQ00014818", "SQ00014819",
+    "SQ00014812",
+    "SQ00014813",
+    "SQ00014814",
+    "SQ00014815",
+    "SQ00014816",
+    "SQ00014817",
+    "SQ00014818",
+    "SQ00014819",
 ]
 
 
@@ -115,9 +119,8 @@ def main() -> int:
     print(f"  feature columns (after NaN drop): {len(good_feats)}")
 
     print("\n[3/7] Aggregating replicates (all doses) per compound: mean profile")
-    moa_per_cpd = (
-        data.groupby("Metadata_broad_sample")["Metadata_moa"]
-        .agg(lambda s: s.value_counts().index[0])
+    moa_per_cpd = data.groupby("Metadata_broad_sample")["Metadata_moa"].agg(
+        lambda s: s.value_counts().index[0]
     )
     agg = data.groupby("Metadata_broad_sample")[good_feats].mean()
     agg["moa"] = moa_per_cpd
@@ -152,7 +155,7 @@ def main() -> int:
     hits_at = {k: [] for k in Ks}
     for i in range(n):
         true_moa = labels[i]
-        same_moa_mask = (labels == true_moa)
+        same_moa_mask = labels == true_moa
         same_moa_mask[i] = False
         n_same = int(same_moa_mask.sum())
         if n_same == 0:
@@ -188,8 +191,7 @@ def main() -> int:
             "recall_at_k": [mean_recall[k] for k in Ks],
             "random_baseline": [random_baseline] * len(Ks),
             "fold_over_random": [
-                mean_recall[k] / random_baseline if random_baseline > 0 else np.nan
-                for k in Ks
+                mean_recall[k] / random_baseline if random_baseline > 0 else np.nan for k in Ks
             ],
         }
     )
@@ -199,40 +201,46 @@ def main() -> int:
     print("\n[6/7] UMAP of compound profiles colored by top-10 MoAs")
     try:
         import umap
-        reducer = umap.UMAP(
-            n_neighbors=15, min_dist=0.2, metric="cosine", random_state=0
-        )
+
+        reducer = umap.UMAP(n_neighbors=15, min_dist=0.2, metric="cosine", random_state=0)
         emb = reducer.fit_transform(X)
     except Exception as e:
         print(f"  UMAP failed ({e}); falling back to PCA(2)")
         from sklearn.decomposition import PCA
+
         emb = PCA(n_components=2, random_state=0).fit_transform(X)
 
     top10_moas = bench["moa_primary"].value_counts().head(10).index.tolist()
     fig, ax = plt.subplots(figsize=(9, 7))
     not_top = ~np.isin(labels, top10_moas)
     ax.scatter(
-        emb[not_top, 0], emb[not_top, 1],
-        s=12, c="lightgrey", alpha=0.5, label="other",
+        emb[not_top, 0],
+        emb[not_top, 1],
+        s=12,
+        c="lightgrey",
+        alpha=0.5,
+        label="other",
     )
     cmap = plt.get_cmap("tab10")
     for idx, moa in enumerate(top10_moas):
         mask = labels == moa
         ax.scatter(
-            emb[mask, 0], emb[mask, 1],
-            s=35, color=cmap(idx),
+            emb[mask, 0],
+            emb[mask, 1],
+            s=35,
+            color=cmap(idx),
             label=f"{moa} (n={int(mask.sum())})",
-            edgecolors="black", linewidths=0.3,
+            edgecolors="black",
+            linewidths=0.3,
         )
-    ax.set_title(
-        f"LINCS Cell Painting: UMAP of {n} compound profiles\n"
-        f"(colored by top-10 MoAs)"
-    )
+    ax.set_title(f"LINCS Cell Painting: UMAP of {n} compound profiles\n(colored by top-10 MoAs)")
     ax.set_xlabel("UMAP 1")
     ax.set_ylabel("UMAP 2")
     ax.legend(
-        loc="center left", bbox_to_anchor=(1.02, 0.5),
-        fontsize=8, frameon=False,
+        loc="center left",
+        bbox_to_anchor=(1.02, 0.5),
+        fontsize=8,
+        frameon=False,
     )
     plt.tight_layout()
     plt.savefig(RESULTS / "umap_moa.png", dpi=150, bbox_inches="tight")
@@ -247,27 +255,17 @@ def main() -> int:
     lines.append("Dataset: LINCS Cell Painting (cpg0004-lincs)")
     lines.append(f"  Batch: {BATCH}")
     lines.append(f"  Plates used: {', '.join(PLATES)}")
-    lines.append(
-        f"  Source: {BUCKET}/cpg0004-lincs/broad/workspace/profiles/"
-    )
-    lines.append(
-        "  (Substitution for Recursion RxRx3-core, which requires an HF account.)"
-    )
+    lines.append(f"  Source: {BUCKET}/cpg0004-lincs/broad/workspace/profiles/")
+    lines.append("  (Substitution for Recursion RxRx3-core, which requires an HF account.)")
     lines.append("")
-    lines.append(
-        "Pipeline: per-compound mean profile over all replicate wells/doses;"
-    )
-    lines.append(
-        "  feature-selected normalized profiles; cosine similarity NN retrieval."
-    )
+    lines.append("Pipeline: per-compound mean profile over all replicate wells/doses;")
+    lines.append("  feature-selected normalized profiles; cosine similarity NN retrieval.")
     lines.append("")
     lines.append(f"N wells (post-filter): {len(data)}")
     lines.append(f"N features used: {len(good_feats)}")
     lines.append(f"N unique compounds: {len(agg)}")
     lines.append(f"N unique primary MoAs: {agg['moa_primary'].nunique()}")
-    lines.append(
-        f"N benchmarkable compounds (MoA with >=2 members): {n}"
-    )
+    lines.append(f"N benchmarkable compounds (MoA with >=2 members): {n}")
     lines.append(f"N eligible MoAs (>=2 members): {len(eligible_moas)}")
     lines.append("")
     lines.append("Recall@K (cosine NN over morphological profile space):")

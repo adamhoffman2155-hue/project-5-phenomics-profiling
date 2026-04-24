@@ -8,7 +8,6 @@ Precision (mAP), and cross-modal (compound-to-CRISPR) matching.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -20,6 +19,7 @@ logger = logging.getLogger("phenomics.retrieval")
 # ------------------------------------------------------------------
 # Cosine similarity
 # ------------------------------------------------------------------
+
 
 def compute_cosine_similarity(
     query: NDArray[np.float64],
@@ -48,6 +48,7 @@ def compute_cosine_similarity(
 # ------------------------------------------------------------------
 # Single-query MoA retrieval
 # ------------------------------------------------------------------
+
 
 def moa_retrieval(
     embeddings: NDArray[np.float64],
@@ -98,11 +99,12 @@ def moa_retrieval(
 # Recall@k
 # ------------------------------------------------------------------
 
+
 def compute_recall_at_k(
     embeddings: NDArray[np.float64],
     metadata: pd.DataFrame,
-    k_values: Optional[List[int]] = None,
-) -> Dict[int, float]:
+    k_values: list[int] | None = None,
+) -> dict[int, float]:
     """Compute Recall@k for MoA-based retrieval across all queries.
 
     For each perturbation, the k nearest neighbours (by cosine similarity)
@@ -132,7 +134,7 @@ def compute_recall_at_k(
     moa_labels = metadata["moa_label"].values
     sorted_indices = np.argsort(sim_matrix, axis=1)[:, ::-1]
 
-    recall: Dict[int, float] = {}
+    recall: dict[int, float] = {}
     for k in k_values:
         k_actual = min(k, n - 1)
         hits = 0
@@ -149,6 +151,7 @@ def compute_recall_at_k(
 # ------------------------------------------------------------------
 # Mean Average Precision (mAP)
 # ------------------------------------------------------------------
+
 
 def compute_map(
     embeddings: NDArray[np.float64],
@@ -176,7 +179,7 @@ def compute_map(
     moa_labels = metadata["moa_label"].values
     sorted_indices = np.argsort(sim_matrix, axis=1)[:, ::-1]
 
-    aps: List[float] = []
+    aps: list[float] = []
     for i in range(n):
         query_moa = moa_labels[i]
         relevant = 0
@@ -201,13 +204,14 @@ def compute_map(
 # Cross-modal retrieval
 # ------------------------------------------------------------------
 
+
 def cross_modal_retrieval(
     compound_embeddings: NDArray[np.float64],
     crispr_embeddings: NDArray[np.float64],
     compound_metadata: pd.DataFrame,
     crispr_metadata: pd.DataFrame,
-    k_values: Optional[List[int]] = None,
-) -> Dict[int, float]:
+    k_values: list[int] | None = None,
+) -> dict[int, float]:
     """Evaluate compound-to-CRISPR cross-modal retrieval.
 
     For each compound perturbation, retrieve the most similar CRISPR
@@ -237,7 +241,7 @@ def cross_modal_retrieval(
     compound_moas = compound_metadata["moa_label"].values
     crispr_moas = crispr_metadata["moa_label"].values
 
-    recall: Dict[int, float] = {}
+    recall: dict[int, float] = {}
     for k in k_values:
         k_actual = min(k, n_crispr)
         hits = 0

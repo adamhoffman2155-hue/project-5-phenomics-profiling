@@ -8,7 +8,6 @@ and standard clustering evaluation metrics.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -26,10 +25,11 @@ logger = logging.getLogger("phenomics.clustering")
 # UMAP / t-SNE dimensionality reduction
 # ------------------------------------------------------------------
 
+
 def run_umap(
     embeddings: NDArray[np.float64],
     n_components: int = 2,
-    config: Optional[object] = None,
+    config: object | None = None,
 ) -> NDArray[np.float64]:
     """Reduce embedding dimensionality with UMAP (or t-SNE fallback).
 
@@ -66,7 +66,9 @@ def run_umap(
 
         logger.info(
             "Running UMAP (n_neighbors=%d, min_dist=%.2f, metric=%s)",
-            n_neighbors, min_dist, metric,
+            n_neighbors,
+            min_dist,
+            metric,
         )
         reducer = umap.UMAP(
             n_components=n_components,
@@ -101,6 +103,7 @@ def run_umap(
 # ------------------------------------------------------------------
 # HDBSCAN clustering
 # ------------------------------------------------------------------
+
 
 def run_hdbscan(
     embeddings_2d: NDArray[np.float64],
@@ -151,15 +154,14 @@ def run_hdbscan(
 
     n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
     n_noise = int((labels == -1).sum())
-    logger.info(
-        "HDBSCAN/DBSCAN found %d clusters, %d noise points", n_clusters, n_noise
-    )
+    logger.info("HDBSCAN/DBSCAN found %d clusters, %d noise points", n_clusters, n_noise)
     return np.asarray(labels, dtype=np.int64)
 
 
 # ------------------------------------------------------------------
 # K-Means clustering
 # ------------------------------------------------------------------
+
 
 def run_kmeans(
     embeddings: NDArray[np.float64],
@@ -191,11 +193,12 @@ def run_kmeans(
 # Elbow method
 # ------------------------------------------------------------------
 
+
 def elbow_method(
     embeddings: NDArray[np.float64],
-    k_range: Optional[range] = None,
+    k_range: range | None = None,
     random_state: int = 42,
-) -> Dict[int, float]:
+) -> dict[int, float]:
     """Compute K-Means inertia for a range of *k* values.
 
     Parameters
@@ -212,7 +215,7 @@ def elbow_method(
     if k_range is None:
         k_range = range(2, 13)
 
-    inertias: Dict[int, float] = {}
+    inertias: dict[int, float] = {}
     for k in k_range:
         if k > embeddings.shape[0]:
             break
@@ -229,10 +232,11 @@ def elbow_method(
 # Clustering evaluation
 # ------------------------------------------------------------------
 
+
 def evaluate_clustering(
     embeddings: NDArray[np.float64],
     labels: NDArray[np.int64],
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Evaluate clustering quality with standard metrics.
 
     Parameters
@@ -254,15 +258,13 @@ def evaluate_clustering(
     n_clusters = len(set(labels[valid]))
     n_noise = int((~valid).sum())
 
-    metrics: Dict[str, float] = {
+    metrics: dict[str, float] = {
         "n_clusters": float(n_clusters),
         "n_noise": float(n_noise),
     }
 
     if n_clusters < 2:
-        logger.warning(
-            "Fewer than 2 clusters (%d) \u2014 skipping evaluation metrics.", n_clusters
-        )
+        logger.warning("Fewer than 2 clusters (%d) \u2014 skipping evaluation metrics.", n_clusters)
         metrics.update(
             {"silhouette": 0.0, "davies_bouldin": float("inf"), "calinski_harabasz": 0.0}
         )

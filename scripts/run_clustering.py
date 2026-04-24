@@ -2,17 +2,17 @@
 """Clustering-only pipeline: load embeddings, normalize, cluster, evaluate."""
 
 import argparse
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from config.config import PipelineConfig
+from src.clustering import evaluate_clustering, run_hdbscan, run_kmeans, run_umap
 from src.data_loader import generate_synthetic_data
 from src.embeddings import tvn_normalize
-from src.clustering import run_umap, run_hdbscan, run_kmeans, elbow_method, evaluate_clustering
-from src.visualization import plot_umap_clusters, plot_cluster_metrics
-from src.utils import setup_logging, set_seed, ensure_dir
+from src.utils import ensure_dir, set_seed, setup_logging
+from src.visualization import plot_cluster_metrics, plot_umap_clusters
 
 
 def main():

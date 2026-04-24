@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -18,7 +17,7 @@ from numpy.typing import NDArray
 
 def setup_logging(
     level_or_name: int | str = logging.INFO,
-    log_file: Optional[str] = None,
+    log_file: str | None = None,
 ) -> logging.Logger:
     """Configure and return the pipeline root logger.
 
@@ -75,6 +74,7 @@ def set_seed(seed: int) -> None:
     np.random.seed(seed)
     try:
         import random
+
         random.seed(seed)
     except Exception:
         pass

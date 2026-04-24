@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Dict, List, Optional
 
 import matplotlib
 
@@ -30,7 +29,7 @@ sns.set_theme(style="whitegrid", context="notebook", font_scale=1.1)
 _DPI = 150
 
 
-def _save_or_show(fig: plt.Figure, save_path: Optional[str]) -> None:
+def _save_or_show(fig: plt.Figure, save_path: str | None) -> None:
     """Save figure to *save_path* (creating parent dirs) or show it."""
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path) or ".", exist_ok=True)
@@ -45,10 +44,11 @@ def _save_or_show(fig: plt.Figure, save_path: Optional[str]) -> None:
 # UMAP scatter plots
 # ------------------------------------------------------------------
 
+
 def plot_umap_clusters(
     umap_coords: NDArray[np.float64],
     labels: NDArray[np.int64],
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
     title: str = "UMAP \u2014 Cluster assignments",
 ) -> None:
     """Scatter plot of UMAP coordinates coloured by cluster label.
@@ -90,8 +90,8 @@ def plot_umap_clusters(
 
 def plot_umap_perturbation_type(
     umap_coords: NDArray[np.float64],
-    perturbation_types: List[str],
-    save_path: Optional[str] = None,
+    perturbation_types: list[str],
+    save_path: str | None = None,
     title: str = "UMAP \u2014 Perturbation type",
 ) -> None:
     """Scatter plot of UMAP coordinates coloured by perturbation type.
@@ -132,9 +132,10 @@ def plot_umap_perturbation_type(
 # Retrieval performance
 # ------------------------------------------------------------------
 
+
 def plot_retrieval_performance(
-    recall_dict: Dict[int, float],
-    save_path: Optional[str] = None,
+    recall_dict: dict[int, float],
+    save_path: str | None = None,
     title: str = "Retrieval \u2014 Recall@k",
 ) -> None:
     """Bar chart of Recall@k values.
@@ -151,7 +152,7 @@ def plot_retrieval_performance(
     values = [recall_dict[k] for k in ks]
     bars = ax.bar([str(k) for k in ks], values, color=sns.color_palette("Blues_d", len(ks)))
 
-    for bar, val in zip(bars, values):
+    for bar, val in zip(bars, values, strict=False):
         ax.text(
             bar.get_x() + bar.get_width() / 2,
             bar.get_height() + 0.01,
@@ -173,9 +174,10 @@ def plot_retrieval_performance(
 # Clustering metrics
 # ------------------------------------------------------------------
 
+
 def plot_cluster_metrics(
-    metrics_dict: Dict[str, float],
-    save_path: Optional[str] = None,
+    metrics_dict: dict[str, float],
+    save_path: str | None = None,
     title: str = "Clustering evaluation metrics",
 ) -> None:
     """Horizontal bar chart of clustering quality metrics.
@@ -194,7 +196,7 @@ def plot_cluster_metrics(
     colors = sns.color_palette("viridis", len(names))
     bars = ax.barh(names, values, color=colors)
 
-    for bar, val in zip(bars, values):
+    for bar, val in zip(bars, values, strict=False):
         ax.text(
             bar.get_width() + 0.01,
             bar.get_y() + bar.get_height() / 2,
@@ -214,9 +216,10 @@ def plot_cluster_metrics(
 # Pathway enrichment heatmap
 # ------------------------------------------------------------------
 
+
 def plot_pathway_heatmap(
     pathway_matrix: pd.DataFrame,
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
     title: str = "Pathway enrichment (Jaccard similarity)",
 ) -> None:
     """Heatmap of pathway enrichment scores per cluster.

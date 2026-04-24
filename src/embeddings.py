@@ -8,7 +8,7 @@ PCA variance analysis, and batch-effect assessment.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -21,9 +21,10 @@ logger = logging.getLogger("phenomics.embeddings")
 # Typical Variation Normalization (TVN)
 # ------------------------------------------------------------------
 
+
 def tvn_normalize(
     embeddings: NDArray[np.float64],
-    plate_ids: Union[List[str], NDArray, Sequence[str]],
+    plate_ids: list[str] | NDArray | Sequence[str],
 ) -> NDArray[np.float64]:
     """Apply Typical Variation Normalization per plate.
 
@@ -51,8 +52,7 @@ def tvn_normalize(
     """
     if len(plate_ids) != embeddings.shape[0]:
         raise ValueError(
-            f"plate_ids length ({len(plate_ids)}) != embeddings rows "
-            f"({embeddings.shape[0]})"
+            f"plate_ids length ({len(plate_ids)}) != embeddings rows ({embeddings.shape[0]})"
         )
 
     unique_plates = sorted(set(plate_ids))
@@ -104,9 +104,10 @@ def tvn_normalize(
 # Embedding quality metrics
 # ------------------------------------------------------------------
 
+
 def compute_embedding_quality(
     embeddings: NDArray[np.float64],
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Compute summary quality metrics for an embedding matrix.
 
     Parameters
@@ -134,7 +135,7 @@ def compute_embedding_quality(
     eigvals = np.linalg.eigvalsh(cov)
     eigvals = np.maximum(eigvals, 0)
     eigvals_norm = eigvals / (eigvals.sum() + 1e-12)
-    participation_ratio = float(1.0 / (np.sum(eigvals_norm ** 2) + 1e-12))
+    participation_ratio = float(1.0 / (np.sum(eigvals_norm**2) + 1e-12))
 
     mean_var = float(variances.mean())
 
@@ -155,10 +156,11 @@ def compute_embedding_quality(
 # PCA variance explained
 # ------------------------------------------------------------------
 
+
 def pca_variance_explained(
     embeddings: NDArray[np.float64],
     n_components: int = 50,
-) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Compute cumulative variance explained by the top PCA components.
 
     Parameters
@@ -195,10 +197,11 @@ def pca_variance_explained(
 # Batch-effect assessment
 # ------------------------------------------------------------------
 
+
 def assess_batch_effects(
     embeddings: NDArray[np.float64],
-    plate_ids: Union[List[str], NDArray, Sequence[str]],
-) -> Dict[str, float]:
+    plate_ids: list[str] | NDArray | Sequence[str],
+) -> dict[str, float]:
     """Quantify batch effects using plate identity as batch label.
 
     Parameters
@@ -213,8 +216,8 @@ def assess_batch_effects(
           (high = strong batch effect)
         - kruskal_wallis_p: p-value from Kruskal-Wallis test on PC1 by plate
     """
-    from sklearn.metrics import silhouette_score
     from sklearn.decomposition import PCA
+    from sklearn.metrics import silhouette_score
 
     unique_plates = list(set(plate_ids))
 

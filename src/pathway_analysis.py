@@ -8,9 +8,7 @@ Jaccard similarity, and pathway-cluster enrichment matrices.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Set
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger("phenomics.pathway_analysis")
@@ -20,31 +18,116 @@ logger = logging.getLogger("phenomics.pathway_analysis")
 # Default mock gene sets (used when gseapy is unavailable)
 # ------------------------------------------------------------------
 
-_DEFAULT_GENE_SETS: Dict[str, List[str]] = {
+_DEFAULT_GENE_SETS: dict[str, list[str]] = {
     "apoptosis": [
-        "BAX", "BCL2", "CASP3", "CASP8", "CASP9", "CYCS", "APAF1",
-        "BID", "BAK1", "XIAP", "BIRC5", "MCL1", "FADD", "FAS",
-        "TNFRSF10A", "TNFRSF10B", "DIABLO", "PMAIP1", "BBC3", "BOK",
+        "BAX",
+        "BCL2",
+        "CASP3",
+        "CASP8",
+        "CASP9",
+        "CYCS",
+        "APAF1",
+        "BID",
+        "BAK1",
+        "XIAP",
+        "BIRC5",
+        "MCL1",
+        "FADD",
+        "FAS",
+        "TNFRSF10A",
+        "TNFRSF10B",
+        "DIABLO",
+        "PMAIP1",
+        "BBC3",
+        "BOK",
     ],
     "cell_cycle": [
-        "CDK1", "CDK2", "CDK4", "CDK6", "CCND1", "CCNE1", "CCNA2",
-        "CCNB1", "RB1", "TP53", "CDKN1A", "CDKN2A", "E2F1", "CDC25A",
-        "PLK1", "AURKA", "AURKB", "BUB1", "MAD2L1", "TTK",
+        "CDK1",
+        "CDK2",
+        "CDK4",
+        "CDK6",
+        "CCND1",
+        "CCNE1",
+        "CCNA2",
+        "CCNB1",
+        "RB1",
+        "TP53",
+        "CDKN1A",
+        "CDKN2A",
+        "E2F1",
+        "CDC25A",
+        "PLK1",
+        "AURKA",
+        "AURKB",
+        "BUB1",
+        "MAD2L1",
+        "TTK",
     ],
     "dna_repair": [
-        "BRCA1", "BRCA2", "ATM", "ATR", "CHEK1", "CHEK2", "RAD51",
-        "TP53BP1", "MDC1", "RNF8", "PARP1", "XRCC1", "MLH1", "MSH2",
-        "MSH6", "ERCC1", "XPC", "XPA", "POLB", "LIG3",
+        "BRCA1",
+        "BRCA2",
+        "ATM",
+        "ATR",
+        "CHEK1",
+        "CHEK2",
+        "RAD51",
+        "TP53BP1",
+        "MDC1",
+        "RNF8",
+        "PARP1",
+        "XRCC1",
+        "MLH1",
+        "MSH2",
+        "MSH6",
+        "ERCC1",
+        "XPC",
+        "XPA",
+        "POLB",
+        "LIG3",
     ],
     "immune_response": [
-        "TNF", "IL6", "IL1B", "IFNG", "CXCL8", "CCL2", "NFKB1",
-        "RELA", "JAK1", "JAK2", "STAT1", "STAT3", "TLR4", "MYD88",
-        "IRAK4", "TRAF6", "IRF3", "CGAS", "STING1", "MAVS",
+        "TNF",
+        "IL6",
+        "IL1B",
+        "IFNG",
+        "CXCL8",
+        "CCL2",
+        "NFKB1",
+        "RELA",
+        "JAK1",
+        "JAK2",
+        "STAT1",
+        "STAT3",
+        "TLR4",
+        "MYD88",
+        "IRAK4",
+        "TRAF6",
+        "IRF3",
+        "CGAS",
+        "STING1",
+        "MAVS",
     ],
     "metabolism": [
-        "HK2", "PKM", "LDHA", "PDK1", "CS", "IDH1", "IDH2",
-        "OGDH", "SDHA", "SDHB", "FH", "MDH2", "ACLY", "FASN",
-        "SCD", "CPT1A", "ACOX1", "GLS", "SLC1A5", "SLC7A11",
+        "HK2",
+        "PKM",
+        "LDHA",
+        "PDK1",
+        "CS",
+        "IDH1",
+        "IDH2",
+        "OGDH",
+        "SDHA",
+        "SDHB",
+        "FH",
+        "MDH2",
+        "ACLY",
+        "FASN",
+        "SCD",
+        "CPT1A",
+        "ACOX1",
+        "GLS",
+        "SLC1A5",
+        "SLC7A11",
     ],
 }
 
@@ -53,9 +136,10 @@ _DEFAULT_GENE_SETS: Dict[str, List[str]] = {
 # Enrichment
 # ------------------------------------------------------------------
 
+
 def enrich_cluster_genes(
-    cluster_genes: List[str],
-    gene_sets: Optional[Dict[str, List[str]]] = None,
+    cluster_genes: list[str],
+    gene_sets: dict[str, list[str]] | None = None,
 ) -> pd.DataFrame:
     """Run gene-set enrichment for a list of cluster genes.
 
@@ -79,7 +163,7 @@ def enrich_cluster_genes(
         gene_sets = _DEFAULT_GENE_SETS
 
     # Expand any semicolon-separated gene symbols
-    expanded: List[str] = []
+    expanded: list[str] = []
     for g in cluster_genes:
         if ";" in g:
             expanded.extend(g.split(";"))
@@ -119,9 +203,9 @@ def enrich_cluster_genes(
     # Mock enrichment: Jaccard + hypergeometric p-value approximation
     from scipy.stats import hypergeom
 
-    query_set: Set[str] = set(cluster_genes)
+    query_set: set[str] = set(cluster_genes)
     # Universe of all genes across all pathways + query
-    universe: Set[str] = set(cluster_genes)
+    universe: set[str] = set(cluster_genes)
     for genes in gene_sets.values():
         universe.update(genes)
     N = len(universe)
@@ -161,9 +245,10 @@ def enrich_cluster_genes(
 # Jaccard similarity
 # ------------------------------------------------------------------
 
+
 def compute_jaccard_similarity(
-    set1: Set[str] | List[str],
-    set2: Set[str] | List[str],
+    set1: set[str] | list[str],
+    set2: set[str] | list[str],
 ) -> float:
     """Compute Jaccard similarity between two gene sets.
 
@@ -186,9 +271,10 @@ def compute_jaccard_similarity(
 # Pathway-cluster enrichment matrix
 # ------------------------------------------------------------------
 
+
 def build_pathway_cluster_matrix(
-    cluster_data: Dict,
-    pathways: Optional[Dict[str, List[str]]] = None,
+    cluster_data: dict,
+    pathways: dict[str, list[str]] | None = None,
 ) -> pd.DataFrame:
     """Build a clusters x pathways enrichment-score matrix.
 
@@ -218,15 +304,15 @@ def build_pathway_cluster_matrix(
     sample_val = next(iter(cluster_data.values()))
     if isinstance(sample_val, pd.DataFrame):
         # Pivot enrichment DataFrames into a matrix
-        all_pathways: Set[str] = set()
+        all_pathways: set[str] = set()
         for df in cluster_data.values():
             all_pathways.update(df["pathway"].tolist())
         sorted_pw = sorted(all_pathways)
 
-        data: Dict[str, List[float]] = {pw: [] for pw in sorted_pw}
+        data: dict[str, list[float]] = {pw: [] for pw in sorted_pw}
         for cl in cluster_labels:
             df = cluster_data[cl]
-            pw_map = dict(zip(df["pathway"], df["jaccard"]))
+            pw_map = dict(zip(df["pathway"], df["jaccard"], strict=False))
             for pw in sorted_pw:
                 data[pw].append(pw_map.get(pw, 0.0))
 
