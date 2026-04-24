@@ -35,6 +35,37 @@ jobs:
       - name: Run pytest
         run: pytest tests/ -v --tb=short
 
+  manifest-drift:
+    name: results/poc/manifest.json is reproducible
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install pandas numpy
+      - name: Regenerate manifest from committed result CSVs
+        run: python scripts/poc/build_manifest.py
+      - name: Fail if the committed manifest has drifted
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys
+          committed = json.loads(subprocess.check_output(
+              ["git", "show", "HEAD:results/poc/manifest.json"]))
+          with open("results/poc/manifest.json") as fh:
+              regen = json.load(fh)
+          for d in (committed, regen):
+              d.pop("generated_at", None)
+          if committed != regen:
+              print("ERROR: results/poc/manifest.json is stale vs build_manifest.py",
+                    file=sys.stderr)
+              print("Re-run 'python scripts/poc/build_manifest.py' and commit.",
+                    file=sys.stderr)
+              sys.exit(1)
+          print("OK: committed manifest reproduces from scripts/poc/build_manifest.py")
+          PY
+
   lint:
     name: lint (ruff)
     runs-on: ubuntu-latest
