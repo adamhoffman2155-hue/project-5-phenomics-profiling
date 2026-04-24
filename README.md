@@ -1,5 +1,10 @@
 # Project 5: Phenomics Perturbation Profiling (RxRx3)
 
+![CI](https://github.com/adamhoffman2155-hue/project-5-phenomics-profiling/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Repro](https://img.shields.io/badge/FAIR_DOME_CURE-11%2F14_%7C_5%2F7_%7C_4%2F4-brightgreen)
+
 **Research question:** Can foundation model embeddings map phenotypic similarity across perturbations?
 
 This is the fifth project in a [computational biology portfolio](https://github.com/adamhoffman2155-hue/bioinformatics-portfolio). After Projects 1–4 focused on genomics and transcriptomics, this project explores a different modality — high-content microscopy — using Recursion's public RxRx3-core dataset and OpenPhenom foundation model embeddings. It represents a deliberate step toward TechBio phenomics, a growing area where computational biology meets drug discovery at scale.
@@ -182,6 +187,22 @@ I formulated the RxRx3 MoA retrieval question, evaluated cluster assignments for
 ## Context in the Portfolio
 
 This is **Project 5 of 7**. It steps outside the GEA-specific thread of Projects 1–4 to explore a different data modality (microscopy) and industry-relevant platform (Recursion's phenomics). It demonstrates breadth beyond genomics while maintaining the same pattern: start with a biological question, build the computational tools to answer it. See the [portfolio site](https://github.com/adamhoffman2155-hue/bioinformatics-portfolio) for the full narrative.
+
+### Cross-project positioning
+
+Project-5 is a **parallel phenomics side-arm** — orthogonal to the P1→P3→P4→P6 GEA chain. It demonstrates a different computational-biology modality (high-content imaging with foundation-model embeddings) rather than consuming or feeding into the transcriptomics/DDR/survival projects.
+
+## Benchmarks
+
+| Benchmark | Output | Summary |
+| --- | --- | --- |
+| Retrieval metric comparison | [`results/benchmark/retrieval_comparison.md`](results/benchmark/retrieval_comparison.md) | Cosine (POC default) dominates at recall@5 = 0.900 over Euclidean (0.717) and Spearman (0.817) on a matched-shape profile space — validates the POC's choice of cosine similarity. |
+
+Rebuild with `python scripts/benchmark_retrieval_metrics.py`.
+
+## Reproducibility
+
+See [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) for the FAIR-BioRS / DOME / CURE self-scorecard (11/14 · 5/7 · 4/4).
 
 ## License
 
