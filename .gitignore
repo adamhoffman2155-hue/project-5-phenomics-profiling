@@ -9,7 +9,10 @@ build/
 .env
 data/raw/
 data/processed/
-results/
+results/*
+!results/.gitkeep
+!results/poc/
+!results/benchmark/
 logs/
 .ipynb_checkpoints/
 .DS_Store
