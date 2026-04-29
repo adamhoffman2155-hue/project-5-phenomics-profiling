@@ -1,0 +1,41 @@
+{
+  "id": 5,
+  "title": "Phenomics Perturbation Profiling",
+  "question": "Can morphological profile similarity recover mechanism-of-action (MoA) groupings for compounds?",
+  "stack": ["pandas", "scikit-learn (cosine similarity)", "umap-learn", "matplotlib"],
+  "dataset_target": "Recursion RxRx3-core (CRISPR KO + compound perturbations) with OpenPhenom (ViT-MAE) embeddings",
+  "dataset_actual_poc": "LINCS Cell Painting (cpg0004-lincs), batch 2016_04_01_a549_48hr_batch1, 8 plates SQ00014812–SQ00014819, normalized feature-selected morphological profiles from Broad Cell Painting Gallery on AWS Open Data",
+  "substitution_reason": "RxRx3-core requires a Hugging Face account; LINCS Cell Painting is on a public S3 bucket and is the canonical compound-MoA Cell Painting benchmark. Same scientific question (recover MoA from morphology via NN retrieval).",
+  "status": "Runnable POC on LINCS; full RxRx3/OpenPhenom path is a target that needs HF authentication",
+  "reproduce_command": "pip install pandas numpy scipy scikit-learn matplotlib umap-learn pyarrow && python scripts/poc/run_poc.py",
+  "outputs": [
+    "results/poc/recall_at_k.csv",
+    "results/poc/poc_summary.txt",
+    "results/poc/umap_moa.png"
+  ],
+  "headline_result": {
+    "n_wells_post_filter": 2808,
+    "n_features_used": 241,
+    "n_unique_compounds": 111,
+    "n_unique_primary_moas": 85,
+    "n_benchmarkable_compounds": 46,
+    "n_eligible_moas_min_2_members": 20,
+    "recall_at_1": 0.1304,
+    "recall_at_5": 0.0957,
+    "recall_at_10": 0.0587,
+    "random_baseline": 0.0319,
+    "fold_over_random_at_1": "4.09×",
+    "fold_over_random_at_5": "3.00×",
+    "interpretation": "Cosine NN retrieval on untuned morphological profiles beats random by 3–4× at K=1 and K=5 — real MoA signal is recoverable. Drop at K=10 is expected since most eligible MoAs have only 2–3 members."
+  },
+  "limitations": [
+    "POC uses LINCS feature-selected profiles, not OpenPhenom foundation-model embeddings — the full project's hypothesis (FM > classical features) is not tested by the POC",
+    "No batch-effect correction (sphering / TVN / CCA); all 8 plates from the same batch minimizes but does not eliminate plate effects",
+    "All doses collapsed to one mean profile per compound; dose-aware aggregation would likely improve recall",
+    "Only 46 compounds fall into benchmarkable MoA groups on this subset — random baseline is ~3%, recall numbers are noisy",
+    "Multi-label MoA strings split on '|'; first listed term used as primary label (lossy simplification)"
+  ],
+  "feeds_into": [],
+  "portfolio_position": "Project 5 of 7 — modality expansion outside the GEA thread (high-content microscopy / TechBio phenomics)",
+  "role": "MoA-retrieval question framing, biological-coherence review of clusters and pathway enrichments. Implementation AI-assisted."
+}
